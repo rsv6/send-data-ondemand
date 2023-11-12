@@ -1,10 +1,16 @@
+/* eslint-disable no-useless-escape */
 import { useState } from 'react';
 
 function App() {
   const [file, setFile] = useState(null);
+  const [ext, setExt] = useState(null);
+  const [nameFile, setNameFile] = useState(null);
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
+    // const regex = /\.[^\.]*$/;
+    setExt(e.target.files[0].name.match(/\.[^\.]*$/)[0]);
+    setNameFile(e.target.files[0].name.match(/.*(?=\.[^\.]*$)/)[0]);
   };
 
   const uploadFile = () => {
@@ -16,7 +22,7 @@ function App() {
     const reader = new FileReader();
     reader.onload = (e) => {
       if (!e.target.error && e.target.result) {
-        uploadChunk(e.target.result, offset)
+        uploadChunk(e.target.result, offset, ext, nameFile)
           .then(() => {
             offset += chunkSize;
             if (offset < file.size) {
@@ -38,16 +44,23 @@ function App() {
     readChunk(offset, chunkSize);
   };
 
-  async function uploadChunk(chunkData, offset) {
+  async function uploadChunk(chunkData, offset, ext, nameFile) {
     const formData = new FormData();
     formData.append("chunk", new Blob([chunkData]));
     formData.append("offset", offset);
   
     await fetch('http://localhost:5000/upload', {
       method: 'POST',
+      headers: {
+        'data-ext': String(ext),
+        'data-name-file': String(nameFile)
+      },
       body: formData,
     });
   }
+
+  console.log('Ext: ', ext);
+  console.log('Name file: ', nameFile);
 
   return (
     <div>
